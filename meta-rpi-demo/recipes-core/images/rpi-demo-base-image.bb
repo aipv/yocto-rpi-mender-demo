@@ -12,6 +12,7 @@ IMAGE_INSTALL:append = " \
 
 IMAGE_FSTYPES:remove = " rpi-sdimg"
 SDIMG_ROOTFS_TYPE = "ext4"
+EXTRA_IMAGE_FEATURES += "debug-tweaks"
 
 ROOTFS_POSTPROCESS_COMMAND += "add_mender_demo_hosts;"
 
