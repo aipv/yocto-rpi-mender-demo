@@ -8,6 +8,7 @@ IMAGE_INSTALL:append = " \
     openssh-sshd \
     kernel-image \
     kernel-devicetree \
+    mender-server-cert-config \
 "
 
 IMAGE_FSTYPES:remove = " rpi-sdimg"
