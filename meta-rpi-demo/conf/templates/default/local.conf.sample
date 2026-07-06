@@ -293,10 +293,4 @@ INHERIT += "mender-full"
 MENDER_ARTIFACT_NAME = "release-1"
 PREFERRED_VERSION_mender = "5.0.0"
 PACKAGECONFIG:remove:pn-mender = "version-inventory-script"
-
-IMAGE_INSTALL:append = " kernel-image kernel-devicetree"
-
-IMAGE_FSTYPES:remove = " rpi-sdimg"
-SDIMG_ROOTFS_TYPE = "ext4"
-
 MENDER_BOOT_PART_SIZE_MB = "64"

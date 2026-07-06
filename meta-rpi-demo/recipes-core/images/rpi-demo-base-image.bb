@@ -6,4 +6,16 @@ IMAGE_INSTALL:append = " \
     tree \
     openssh \
     openssh-sshd \
+    kernel-image \
+    kernel-devicetree \
 "
+
+IMAGE_FSTYPES:remove = " rpi-sdimg"
+SDIMG_ROOTFS_TYPE = "ext4"
+
+ROOTFS_POSTPROCESS_COMMAND += "add_mender_demo_hosts;"
+
+add_mender_demo_hosts() {
+    echo "192.168.0.88 docker.mender.io s3.docker.mender.io" \
+        >> ${IMAGE_ROOTFS}${sysconfdir}/hosts
+}
