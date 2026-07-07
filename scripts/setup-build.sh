@@ -5,13 +5,13 @@
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     echo "Please source this script instead of executing it:"
-    echo "  source scripts/setup-build.sh build-rpi"
+    echo "  source scripts/setup-build.sh build"
     exit 1
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-BUILD_DIR="${1:-build-rpi}"
+BUILD_DIR="${1:-build}"
 
 cd "${PROJECT_DIR}" || return 1
 
