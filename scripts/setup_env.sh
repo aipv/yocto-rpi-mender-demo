@@ -19,6 +19,7 @@ echo "Initializing submodules..."
 git submodule update --init --recursive || return 1
 
 export TEMPLATECONF="${PROJECT_DIR}/meta-rpi-demo/conf/templates/default"
+export PATH="${PROJECT_DIR}/scripts:$PATH"
 
 if [ -f "${PROJECT_DIR}/${BUILD_DIR}/conf/local.conf" ]; then
     echo "Using existing build configuration: ${BUILD_DIR}"
