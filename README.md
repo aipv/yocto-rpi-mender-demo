@@ -332,7 +332,7 @@ The image includes OpenSSH server. After flashing:
    ```bash
    ssh root@<device-ip>
    ```
-   (Password may be empty or "root" depending on configuration)
+   (Password is empty)
 
 ## Version Information
 
