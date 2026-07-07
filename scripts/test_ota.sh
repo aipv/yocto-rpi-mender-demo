@@ -1,0 +1,79 @@
+#!/bin/bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+source "$SCRIPT_DIR/config/yocto.env"
+
+DEVICE_HOST="192.168.0.82"
+
+echo "========================================"
+echo "OTA Test Script"
+echo "========================================"
+echo
+
+# Step 1: Clean output
+echo "[1/6] Cleaning output..."
+"$SCRIPT_DIR/clean_output.sh" <<< "y"
+
+# Step 2: Build image with timestamp
+echo
+echo "[2/6] Building image..."
+"$SCRIPT_DIR/build_image.sh" -t
+
+# Step 3: Show output and get artifact info
+echo
+echo "[3/6] Getting artifact info..."
+# Use YOCTO_DEPLOY_DIR from yocto.env (relative to PROJECT_DIR)
+DEPLOY_DIR="$PROJECT_DIR/$YOCTO_DEPLOY_DIR"
+
+ARTIFACT_FILE=""
+ARTIFACT_NAME=""
+
+for artifact in "$DEPLOY_DIR"/*.mender; do
+    ARTIFACT_FILE="$artifact"
+    ARTIFACT_NAME=$(mender-artifact read "$artifact" \
+        | awk -F': ' '/^  Name:/ {print $2}')
+    break
+done
+
+if [ -z "$ARTIFACT_FILE" ] || [ -z "$ARTIFACT_NAME" ]; then
+    echo "Error: No artifact found"
+    exit 1
+fi
+
+echo "Artifact Name : $ARTIFACT_NAME"
+echo "Artifact File : $ARTIFACT_FILE"
+
+# Step 4: Upload and deploy artifact
+source "$SCRIPT_DIR/config/mender.env"
+
+echo
+echo "[4/6] Uploading artifact..."
+"$SCRIPT_DIR/upload_artifact.sh" "$ARTIFACT_FILE"
+
+echo
+echo "[5/6] Deploying artifact..."
+"$SCRIPT_DIR/deploy_artifact.sh" "$ARTIFACT_NAME" <<< "y"
+
+# Step 5: Wait 60 seconds
+echo
+echo "[6/6] Waiting 60 seconds for deployment..."
+sleep 60
+
+# Step 6: SSH to device and check image-version
+echo
+echo "========================================"
+echo "Checking /etc/image-version on device"
+echo "========================================"
+
+ssh-keygen -f "$HOME/.ssh/known_hosts" -R "$DEVICE_HOST" 2>/dev/null || true
+
+ssh -o StrictHostKeyChecking=no "root@${DEVICE_HOST}" cat /etc/image-version
+
+echo
+echo "========================================"
+echo "OTA Test Complete"
+echo "========================================"
