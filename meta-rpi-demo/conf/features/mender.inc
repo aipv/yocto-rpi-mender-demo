@@ -4,7 +4,7 @@
 
 INHERIT += "mender-full"
 
-MENDER_ARTIFACT_NAME = "release-1"
+MENDER_ARTIFACT_NAME = "release-1-${DATE}"
 
 PREFERRED_VERSION_mender = "5.0.0"
 

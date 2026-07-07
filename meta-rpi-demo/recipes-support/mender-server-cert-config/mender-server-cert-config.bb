@@ -22,7 +22,7 @@ CONF="$D/etc/mender/mender.conf"
 
 if [ -f "$CONF" ]; then
     if ! grep -q '"ServerCertificate"' "$CONF"; then
-        sed -i '1s|{|{\n  "ServerCertificate": "/etc/mender/server.crt",|' "$CONF"
+        sed -i '1s|{|{\n    "ServerCertificate": "/etc/mender/server.crt",|' "$CONF"
     fi
 fi
 }
