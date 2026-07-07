@@ -3,12 +3,6 @@
 #
 
 INHERIT += "mender-full"
-
-MENDER_ARTIFACT_NAME = "${IMAGE_BASENAME}-${MACHINE}-Release-1.0-test001"
-
 PREFERRED_VERSION_mender = "5.0.0"
-
-
 PACKAGECONFIG:remove:pn-mender = "version-inventory-script"
-
 MENDER_BOOT_PART_SIZE_MB = "64"

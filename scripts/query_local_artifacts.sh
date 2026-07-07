@@ -2,13 +2,29 @@
 
 set -euo pipefail
 
-if [ $# -eq 0 ]; then
-    SEARCH_DIR="."
-else
-    SEARCH_DIR="$1"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+source "$SCRIPT_DIR/config/yocto.env"
+
+DEPLOY_DIR="$PROJECT_DIR/$YOCTO_DEPLOY_DIR"
+
+if [ ! -d "$DEPLOY_DIR" ]; then
+    echo "Error: deploy directory not found:"
+    echo "  $DEPLOY_DIR"
+    exit 1
 fi
 
-find "$SEARCH_DIR" -type f -name "*.mender" \
-    -printf "%TY-%Tm-%Td %TH:%TM  %10s bytes  %p\n" \
-    | sort
+shopt -s nullglob
 
+for artifact in "$DEPLOY_DIR"/*.mender; do
+
+    ARTIFACT_NAME=$(mender-artifact read "$artifact" \
+        | awk -F': ' '/^  Name:/ {print $2}')
+
+    echo "======================================================================"
+    echo "Artifact Name : $ARTIFACT_NAME"
+    echo "File          : $artifact"
+    echo
+
+done

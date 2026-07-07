@@ -22,5 +22,8 @@ require conf/features/raspberrypi.inc
 # Enable Mender OTA support
 require conf/features/mender.inc
 
+# Enable Image Release support
+require conf/image.conf
+
 # Configuration version
 CONF_VERSION = "2"
