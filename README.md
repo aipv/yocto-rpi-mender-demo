@@ -18,8 +18,8 @@ This project demonstrates practical Embedded Linux development using the Yocto P
 ### Mender OTA
 
 - Mender 5.0.0 client pre-configured and enabled on the device
-- Device connects to Mender server at `docker.mender.io`
-- Automatic update
+- Device connects to a locally hosted Mender Server using the hostname `docker.mender.io`
+- Automatic OTA updates
 
 ### Custom Yocto Development
 
@@ -32,17 +32,15 @@ The custom layer `meta-rpi-demo` includes:
 - Build configuration templates
 
 ### Installed Packages
-- `tree` - directory listing utility
+
+- `tree` - Directory listing utility
 - `openssh` - SSH client and server
 - `openssh-sshd` - SSH daemon
-- `kernel-image` - kernel modules and image
-- `kernel-devicetree` - device tree blobs
 - `mender-server-cert-config` - Mender server TLS certificates
-
 
 ## Repository Structure
 
-```
+```text
 yocto-rpi-mender-demo/
 ├── meta-rpi-demo/
 │   ├── conf/
@@ -52,50 +50,26 @@ yocto-rpi-mender-demo/
 │   ├── setup_env.sh
 │   ├── build_image.sh
 │   ├── upload_artifact.sh
-│   ├── deplay_artifact.sh
+│   ├── deploy_artifact.sh
 │   └── test_ota.sh
 └── README.md
 ```
 
-The upstream Yocto layers (`poky`, `meta-openembedded`, `meta-raspberrypi`, `meta-mender`, `meta-mender-community`) are pulled in as Git submodules.
+The upstream Yocto layers (`poky`, `meta-openembedded`, `meta-raspberrypi`, `meta-mender`, and `meta-mender-community`) are pulled in as Git submodules.
 
 # Setup
 
 ## Prerequisites
 
-- **OS**: Linux (Ubuntu 22.04+ recommended)
-- **Disk**: 80GB+ free space
-- **Memory**: 8GB+ RAM
-- **Packages**: Required build dependencies
+- **OS:** Ubuntu 22.04 or newer
+- **Disk:** 80 GB or more free space
+- **Memory:** 8 GB RAM minimum
 
 ## Install Build Dependencies
 
 ```bash
 sudo apt update
-sudo apt install -y \
-    build-essential \
-    chrpath \
-    cpio \
-    diffstat \
-    gcc \
-    g++ \
-    git \
-    python3 \
-    python3-pip \
-    unzip \
-    texinfo \
-    flex \
-    bison \
-    bc \
-    zstd \
-    jq \
-    u-boot-tools \
-    dosfstools \
-    mtools \
-    parted \
-    libssl-dev \
-    libncurses-dev \
-    uuid-dev
+sudo apt install -y build-essential chrpath cpio diffstat gcc g++ git python3 python3-pip unzip texinfo flex bison bc zstd jq u-boot-tools dosfstools mtools parted libssl-dev libncurses-dev uuid-dev
 ```
 
 ## Initialize Submodules
@@ -108,24 +82,8 @@ git submodule update --init --recursive
 ## Initialize Build Environment
 
 ```bash
-source scripts/setup-build.sh build
+source scripts/setup_env.sh build
 ```
-
-This creates a `build` directory (or uses existing) with proper configuration from `meta-rpi-demo/conf/templates/default/`.
-
-```bash
-bitbake-layers show-layers
-```
-
-Expected output should include:
-- `meta`
-- `meta-poky`
-- `meta-yocto-bsp`
-- `meta-oe`
-- `meta-raspberrypi`
-- `meta-mender-core`
-- `meta-mender-raspberrypi`
-- `meta-rpi-demo`
 
 ## Build Image
 
@@ -133,98 +91,60 @@ Expected output should include:
 bitbake rpi-demo-base-image
 ```
 
-After successful build, artifacts are in:
-```
+Artifacts are generated in:
+
+```text
 build/tmp/deploy/images/raspberrypi3-64/
 ```
-Key files:
-- `.wic.bz2` - Raw SD card image (for flashing)
-- `.mender` - Mender update artifact (for OTA updates)
-- `.wic.bmap` - Block map for `dd` efficiency
 
-## Flashing to SD Card
-
-1. Decompress the image:
-   ```bash
-   bunzip2 -k build/tmp/deploy/images/raspberrypi3-64/rpi-demo-base-image-raspberrypi3-64.wic.bz2
-   ```
-
-2. Flash using `dd`:
-   ```bash
-   sudo dd if=rpi-demo-base-image-raspberrypi3-64.wic of=/dev/sdX bs=4M status=progress
-   ```
-
-### Option 2: Using Balena CLI
+## Flash the SD Card
 
 ```bash
-balenaetcher -d /dev/sdX build/tmp/deploy/images/raspberrypi3-64/rpi-demo-base-image-raspberrypi3-64.wic.bz2
+bunzip2 -k build/tmp/deploy/images/raspberrypi3-64/rpi-demo-base-image-raspberrypi3-64.wic.bz2
+
+sudo dd if=build/tmp/deploy/images/raspberrypi3-64/rpi-demo-base-image-raspberrypi3-64.wic of=/dev/sdX bs=4M status=progress conv=fsync
 ```
+
+Alternatively, use the Balena Etcher desktop application.
 
 ## First Boot
 
-After booting the Raspberry Pi, trying get IP address from Boot Information or Router:
+Determine the Raspberry Pi IP address from the boot messages or your router:
 
 ```bash
 ssh root@<device-ip>
 ```
 
-The `debug-tweaks` option is enabled, SSH login does not require a password.
-
-
 # Mender Server Setup
 
-## Install local Mender Server
-
-## Start Mender Server
+Start the Mender Server:
 
 ```bash
 cd ../mender-server
 docker compose up -d
 ```
-## Mender Server Hostname Configuration
 
-And Mender Server'IP address in `/etc/hosts` to resolve `docker.mender.io` to your PC.
+Add the Mender Server IP address to `/etc/hosts` so that `docker.mender.io` resolves to your local server.
 
-## Access the Mender Server via WebUI
+Create `scripts/config/mender.env` from `scripts/config/mender.env.example` and update `MENDER_PAT`.
 
-On first login, create an account via the UI.
-
-## Get Personal access token from Mender Server
-
-After login, get a Personal access token (PAT) from the Mender Server.
-
-## Configuration Menter Server in the project
-
-Createa scripts/config/mender.env based on the mender.env.example file.
-
-Update MENDER_PAT in the configuration file.
-
-
-# OTA Update 
+# OTA Update
 
 ## OTA Workflow
 
-The OTA workflow is:
-
-```
+```text
 Build Image
-      │
-      ▼
-Check mender file and artifact name
-      │
-      ▼
-Upload Artifact to Mender Server
-      │
-      ▼
+  ↓
+Verify Generated Artifact
+  ↓
+Upload Artifact
+  ↓
 Create Deployment
-      │
-      ▼
+  ↓
 Device Downloads Update
-      │
-      ▼
+  ↓
 Automatic Reboot
-      │
-      ▼
+  ↓
 OTA Updated
 ```
 
@@ -234,58 +154,35 @@ OTA Updated
 |---------|-------------|
 | `setup_env.sh` | Initializes the Yocto build environment. |
 | `build_image.sh` | Builds the custom Yocto image and the Mender OTA artifact (`.mender`). |
-| `show_output.sh` | Displays image and mender artifact name after building. |
-| `clean_output.sh` | Removes generated build artifacts to prepare for a clean build or deployment. |
-| `upload_artifact.sh` | Uploads the generated Mender artifact to the Mender Server. |
-| `deploy_artifact.sh` | Creates a deployment on the Mender Server to deliver the uploaded artifact. |
-| `show_devices.sh` | Lists registered devices and their current status on the Mender Server. |
-| `show_artifact.sh` | Display the artifacts currently available on the Mender Server. |
-| `show_deployment.sh` | Shows the status and progress of active or completed OTA deployments. |
-| `test_ota.sh` | Automates the complete OTA workflow by building the image, uploading an artifact, creating a deployment, and verifying the result. |
+| `show_output.sh` | Displays the image version and Mender artifact information after building. |
+| `clean_output.sh` | Removes generated build artifacts. |
+| `upload_artifact.sh` | Uploads the generated Mender artifact. |
+| `deploy_artifact.sh` | Creates a deployment on the Mender Server. |
+| `show_devices.sh` | Lists registered devices. |
+| `show_artifact.sh` | Displays available artifacts. |
+| `show_deployment.sh` | Displays deployment progress. |
+| `test_ota.sh` | Runs the complete OTA workflow automatically. |
 
 ## Quick Start
 
 ```bash
-# 1. Initialize environment
-source scripts/setup_env.sh
-
-# 2. Clean old artifacts
+source scripts/setup_env.sh build
 ./scripts/clean_output.sh <<< "y"
-
-# 3. Build new image
 ./scripts/build_image.sh -t
-
-# 4. Get artifact info
 ./scripts/show_output.sh
-
-# 5. Upload artifact
 ARTIFACT_FILE="build/tmp/deploy/images/raspberrypi3-64/rpi-demo-base-image-raspberrypi3-64.mender"
 ./scripts/upload_artifact.sh "$ARTIFACT_FILE"
-
-# 6. Deploy to device
 ./scripts/deploy_artifact.sh <artifact-name> <<< "y"
-
-# 7. Wait and check
-sleep 90 && ssh root@192.168.0.82 cat /etc/image-version
 ```
 
-Or run the full test script
-```
-bash scripts/test_ota.sh
-```
 # Future Improvements
 
-- Artifact Provides / Depends metadata
-- Automatic version generation from Git
-- GitHub Actions CI build
+- Artifact metadata
+- GitHub Actions CI
 - QEMU support
-- Secure Boot demonstration
+- Secure Boot
 - Software signing
-- Docker-based build environment
-
----
 
 # License
 
 This project is provided for demonstration and educational purposes.
-
