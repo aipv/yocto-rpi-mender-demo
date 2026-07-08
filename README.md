@@ -1,32 +1,35 @@
-# Raspberry Pi Mender Demo
+# Raspberry Pi Mender OTA Demo
 
-Yocto-based build system for Raspberry Pi 3 Model B+ with Mender OTA update support.
+A complete **Yocto Project** demonstration showing how to build a custom Embedded Linux image for **Raspberry Pi 3 Model B+** with **Mender OTA** support.
 
-## Overview
+This project demonstrates practical Embedded Linux development using the Yocto Project, including custom layers, BitBake recipes, system customization, and over-the-air software updates with Mender.
 
-This project builds a Raspberry Pi 3 B+ image with Mender client for OTA firmware updates. The image connects to a Mender server for centralized firmware management.
+## Features
 
-- **Target**: Raspberry Pi 3 Model B+ (64-bit)
-- **Base**: Poky Scarthgap + Mender 5.0.0
-- **Artifact Name**: `release-1`
+### Embedded Linux
 
-## Included Features
+- Yocto Project (Scarthgap)
+- Raspberry Pi 3 Model B+ (64-bit)
+- Linux Kernel 6.x
+- U-Boot bootloader
+- OpenSSH server
+- Custom image configuration
 
-### Mender OTA Update Client
+### Mender OTA
+
 - Mender 5.0.0 client pre-configured and enabled on the device
-- Dual rootfs partition for atomic updates and automatic rollback
-- Artifact name: `release-1`
 - Device connects to Mender server at `docker.mender.io`
-- Automatic update checks and status reporting
+- Automatic update
 
-### Bootloader
-- U-Boot for Raspberry Pi 3 B+ (64-bit)
-- Mender-compatible boot flow configured
-- Environment stored in `fw_env.config`
+### Custom Yocto Development
 
-### Linux Kernel
-- Kernel 6.6.63 (mainline-based)
-- Device tree: `bcm2710-rpi-3-b-plus.dtb`
+The custom layer `meta-rpi-demo` includes:
+
+- Custom image recipe
+- Image version package
+- Mender server certificate recipe
+- Demo application recipe
+- Build configuration templates
 
 ### Installed Packages
 - `tree` - directory listing utility
@@ -36,89 +39,79 @@ This project builds a Raspberry Pi 3 B+ image with Mender client for OTA firmwar
 - `kernel-devicetree` - device tree blobs
 - `mender-server-cert-config` - Mender server TLS certificates
 
-### Network Configuration
-- Pre-configured `/etc/hosts` entries for `docker.mender.io` and `s3.docker.mender.io`
-- DHCP-enabled ethernet
-- Hostname resolution for Mender server
 
 ## Repository Structure
 
 ```
 yocto-rpi-mender-demo/
-├── poky/                    # Yocto BSP layer
-├── meta-openembedded/      # OpenEmbedded layer
-├── meta-raspberrypi/       # Raspberry Pi support
-├── meta-mender/            # Mender core
-├── meta-mender-community/  # Mender community integrations
-├── meta-rpi-demo/          # Custom demo layer
-├── build/                  # Build directory
-├── downloads/              # Downloaded sources cache
-├── sstate-cache/           # Shared state cache
-└── scripts/
-    └── setup-build.sh      # Build environment setup script
+├── meta-rpi-demo/
+│   ├── conf/
+│   ├── recipes-core/
+│   └── recipes-support/
+├── scripts/
+│   ├── setup_env.sh
+│   ├── build_image.sh
+│   ├── upload_artifact.sh
+│   ├── deplay_artifact.sh
+│   └── test_ota.sh
+└── README.md
 ```
+
+The upstream Yocto layers (`poky`, `meta-openembedded`, `meta-raspberrypi`, `meta-mender`, `meta-mender-community`) are pulled in as Git submodules.
+
+# Setup
 
 ## Prerequisites
 
 - **OS**: Linux (Ubuntu 22.04+ recommended)
-- **Disk**: 100GB+ free space
+- **Disk**: 80GB+ free space
 - **Memory**: 8GB+ RAM
 - **Packages**: Required build dependencies
 
-### Install Build Dependencies
+## Install Build Dependencies
 
 ```bash
-sudo apt update && sudo apt install -y \
-    git \
+sudo apt update
+sudo apt install -y \
     build-essential \
+    chrpath \
+    cpio \
+    diffstat \
+    gcc \
+    g++ \
+    git \
     python3 \
     python3-pip \
-    diffstat \
-    mtools \
-    u-boot-tools \
-    zip \
-    bison \
-    g++ \
-    gcc \
-    gnat \
-    autoconf \
-    automake \
-    libtool \
-    libncurses-dev \
-    libssl-dev \
-    bc \
+    unzip \
+    texinfo \
     flex \
-    uuid-dev \
-    zlib1g-dev \
+    bison \
+    bc \
+    zstd \
+    jq \
+    u-boot-tools \
     dosfstools \
-    e2fsprogs \
     mtools \
     parted \
-    pkg-config \
-    fakeroot \
-    cpio \
-    xz-utils \
-    zstd
+    libssl-dev \
+    libncurses-dev \
+    uuid-dev
 ```
 
-## Setup
-
-### 1. Initialize Submodules
+## Initialize Submodules
 
 ```bash
 cd yocto-rpi-mender-demo
 git submodule update --init --recursive
 ```
 
-### 2. Initialize Build Environment
+## Initialize Build Environment
 
 ```bash
 source scripts/setup-build.sh build
 ```
 
 This creates a `build` directory (or uses existing) with proper configuration from `meta-rpi-demo/conf/templates/default/`.
-
-### 3. Verify Layers
 
 ```bash
 bitbake-layers show-layers
@@ -134,40 +127,29 @@ Expected output should include:
 - `meta-mender-raspberrypi`
 - `meta-rpi-demo`
 
-## Build
-
-### Full Image Build
+## Build Image
 
 ```bash
 bitbake rpi-demo-base-image
 ```
 
-### Build Outputs
-
 After successful build, artifacts are in:
 ```
 build/tmp/deploy/images/raspberrypi3-64/
 ```
-
 Key files:
 - `.wic.bz2` - Raw SD card image (for flashing)
 - `.mender` - Mender update artifact (for OTA updates)
 - `.wic.bmap` - Block map for `dd` efficiency
 
-### Building with Shared Cache
-
-The project uses shared `downloads/` and `sstate-cache/` directories to speed up rebuilds and reduce disk space.
-
 ## Flashing to SD Card
-
-### Option 1: Using Balena Etcher
 
 1. Decompress the image:
    ```bash
    bunzip2 -k build/tmp/deploy/images/raspberrypi3-64/rpi-demo-base-image-raspberrypi3-64.wic.bz2
    ```
 
-2. Flash using Etcher or `dd`:
+2. Flash using `dd`:
    ```bash
    sudo dd if=rpi-demo-base-image-raspberrypi3-64.wic of=/dev/sdX bs=4M status=progress
    ```
@@ -178,172 +160,132 @@ The project uses shared `downloads/` and `sstate-cache/` directories to speed up
 balenaetcher -d /dev/sdX build/tmp/deploy/images/raspberrypi3-64/rpi-demo-base-image-raspberrypi3-64.wic.bz2
 ```
 
-## Network Configuration
+## First Boot
 
-The image is pre-configured with:
-- `/etc/hosts` entry: `192.168.0.88 docker.mender.io s3.docker.mender.io`
+After booting the Raspberry Pi, trying get IP address from Boot Information or Router:
 
-Update `meta-rpi-demo/recipes-core/images/rpi-demo-base-image.bb` if your Mender server IP differs.
+```bash
+ssh root@<device-ip>
+```
 
-## Mender Server Setup
+The `debug-tweaks` option is enabled, SSH login does not require a password.
 
-### Start Mender Server
+
+# Mender Server Setup
+
+## Install local Mender Server
+
+## Start Mender Server
 
 ```bash
 cd ../mender-server
 docker compose up -d
 ```
+## Mender Server Hostname Configuration
 
-The Mender GUI is available at `http://localhost:8090`.
+And Mender Server'IP address in `/etc/hosts` to resolve `docker.mender.io` to your PC.
 
-### Default Credentials
+## Access the Mender Server via WebUI
 
 On first login, create an account via the UI.
 
-### Server Hostname Configuration
+## Get Personal access token from Mender Server
 
-If running on a custom IP, update the Mender server hostname:
-```bash
-# In mender-server/.env or docker-compose environment
-MENDER_HOSTNAME=docker.mender.io
+After login, get a Personal access token (PAT) from the Mender Server.
+
+## Configuration Menter Server in the project
+
+Createa scripts/config/mender.env based on the mender.env.example file.
+
+Update MENDER_PAT in the configuration file.
+
+
+# OTA Update 
+
+## OTA Workflow
+
+The OTA workflow is:
+
+```
+Build Image
+      │
+      ▼
+Check mender file and artifact name
+      │
+      ▼
+Upload Artifact to Mender Server
+      │
+      ▼
+Create Deployment
+      │
+      ▼
+Device Downloads Update
+      │
+      ▼
+Automatic Reboot
+      │
+      ▼
+OTA Updated
 ```
 
-And update device's `/etc/hosts` to resolve `docker.mender.io` to your server IP.
+## Helper Scripts
 
-## Uploading Artifacts to Mender
+| Script | Description |
+|---------|-------------|
+| `setup_env.sh` | Initializes the Yocto build environment. |
+| `build_image.sh` | Builds the custom Yocto image and the Mender OTA artifact (`.mender`). |
+| `show_output.sh` | Displays image and mender artifact name after building. |
+| `clean_output.sh` | Removes generated build artifacts to prepare for a clean build or deployment. |
+| `upload_artifact.sh` | Uploads the generated Mender artifact to the Mender Server. |
+| `deploy_artifact.sh` | Creates a deployment on the Mender Server to deliver the uploaded artifact. |
+| `show_devices.sh` | Lists registered devices and their current status on the Mender Server. |
+| `show_artifact.sh` | Display the artifacts currently available on the Mender Server. |
+| `show_deployment.sh` | Shows the status and progress of active or completed OTA deployments. |
+| `test_ota.sh` | Automates the complete OTA workflow by building the image, uploading an artifact, creating a deployment, and verifying the result. |
 
-### Using Mender CLI
-
-Install `mender-artifact` on your build machine:
-```bash
-curl -fsSL https://get.mender.io | bash
-```
-
-### Upload Artifact
-
-1. Log into Mender UI at `http://localhost:8090`
-2. Go to **Releases**
-3. Click **Upload artifact**
-4. Select the `.mender` file from `build/tmp/deploy/images/raspberrypi3-64/`
-
-Or use the API:
+## Quick Start
 
 ```bash
-# Get auth token from UI, then:
-curl -X POST \
-  -H "Authorization: Bearer <token>" \
-  -F "artifact=@build/tmp/deploy/images/raspberrypi3-64/rpi-demo-base-image-raspberrypi3-64.mender" \
-  http://localhost/api/management/v1/deployments/artifacts
+# 1. Initialize environment
+source scripts/setup_env.sh
+
+# 2. Clean old artifacts
+./scripts/clean_output.sh <<< "y"
+
+# 3. Build new image
+./scripts/build_image.sh -t
+
+# 4. Get artifact info
+./scripts/show_output.sh
+
+# 5. Upload artifact
+ARTIFACT_FILE="build/tmp/deploy/images/raspberrypi3-64/rpi-demo-base-image-raspberrypi3-64.mender"
+./scripts/upload_artifact.sh "$ARTIFACT_FILE"
+
+# 6. Deploy to device
+./scripts/deploy_artifact.sh <artifact-name> <<< "y"
+
+# 7. Wait and check
+sleep 90 && ssh root@192.168.0.82 cat /etc/image-version
 ```
 
-## Deploying Updates
-
-### From Mender UI
-
-1. Go to **Devices** - verify your device appears and shows "connected"
-2. Go to **Releases** - select your uploaded artifact
-3. Click **Create deployment**
-4. Select target device(s)
-5. Submit deployment
-
-### Device Status
-
-Monitor deployment status from:
-- **Mender UI**: Devices tab → Select device → Deployment status
-- **Device shell**: `journalctl -u mender`
-
-## Customizing the Build
-
-### Change Mender Artifact Name
-
-Edit `meta-rpi-demo/conf/features/mender.inc`:
-```bash
-MENDER_ARTIFACT_NAME = "release-2"
+Or run the full test script
 ```
-
-### Add Packages to Image
-
-Edit `meta-rpi-demo/recipes-core/images/rpi-demo-base-image.bb`:
-```bash
-IMAGE_INSTALL:append = " \
-    your-package \
-    another-package \
-"
+bash scripts/test_ota.sh
 ```
+# Future Improvements
 
-### Change Server IP
+- Artifact Provides / Depends metadata
+- Automatic version generation from Git
+- GitHub Actions CI build
+- QEMU support
+- Secure Boot demonstration
+- Software signing
+- Docker-based build environment
 
-Edit `meta-rpi-demo/recipes-core/images/rpi-demo-base-image.bb`:
-```bash
-add_mender_demo_hosts() {
-    echo "YOUR_SERVER_IP docker.mender.io s3.docker.mender.io" \
-        >> ${IMAGE_ROOTFS}${sysconfdir}/hosts
-}
-```
+---
 
-### Change Machine Type
+# License
 
-Edit `build/conf/local.conf`:
-```bash
-MACHINE ??= "raspberrypi3-64"
-```
+This project is provided for demonstration and educational purposes.
 
-Supported machines in `meta-raspberrypi`:
-- `raspberrypi0-wifi`
-- `raspberrypi3`
-- `raspberrypi3-64`
-- `raspberrypi4`
-- `raspberrypi4-64`
-
-## Troubleshooting
-
-### Device Not Connecting
-
-1. Check network: `ping docker.mender.io`
-2. Check Mender service: `systemctl status mender`
-3. View logs: `journalctl -u mender -f`
-4. Verify server IP in `/etc/hosts`
-
-### Build Failures
-
-1. Clean and rebuild:
-   ```bash
-   bitbake rpi-demo-base-image -c cleanall
-   bitbake rpi-demo-base-image
-   ```
-
-2. Verify submodules:
-   ```bash
-   git submodule update --init --recursive
-   ```
-
-### Deployment Failures
-
-1. Check device connectivity in Mender UI
-2. Verify artifact compatibility with device type
-3. Check deployment logs: Mender UI → Device → Deployment history
-
-### SSH Access to Device
-
-The image includes OpenSSH server. After flashing:
-
-1. Find device IP (via DHCP or `nmap`)
-2. Connect:
-   ```bash
-   ssh root@<device-ip>
-   ```
-   (Password is empty)
-
-## Version Information
-
-- **Yocto**: Scarthgap
-- **Mender**: 5.0.0
-- **Raspberry Pi**: 3 B+ (64-bit)
-- **Kernel**: 6.6.63
-
-## References
-
-- [Mender Documentation](https://docs.mender.io/)
-- [Yocto Project](https://www.yoctoproject.org/)
-- [Raspberry Pi Yocto Layer](https://github.com/agherzan/meta-raspberrypi)
-- [Mender Yocto Layer](https://github.com/mendersoftware/meta-mender)
