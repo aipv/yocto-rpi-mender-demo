@@ -6,12 +6,12 @@ BBPATH = "${TOPDIR}"
 BBFILES ?= ""
 
 BBLAYERS ?= " \
-  ${TOPDIR}/../poky/meta \
-  ${TOPDIR}/../poky/meta-poky \
-  ${TOPDIR}/../poky/meta-yocto-bsp \
-  ${TOPDIR}/../meta-openembedded/meta-oe \
-  ${TOPDIR}/../meta-raspberrypi \
-  ${TOPDIR}/../meta-mender/meta-mender-core \
-  ${TOPDIR}/../meta-mender-community/meta-mender-raspberrypi \
+  ${TOPDIR}/../ext/poky/meta \
+  ${TOPDIR}/../ext/poky/meta-poky \
+  ${TOPDIR}/../ext/poky/meta-yocto-bsp \
+  ${TOPDIR}/../ext/meta-openembedded/meta-oe \
+  ${TOPDIR}/../ext/meta-raspberrypi \
+  ${TOPDIR}/../ext/meta-mender/meta-mender-core \
+  ${TOPDIR}/../ext/meta-mender-community/meta-mender-raspberrypi \
   ${TOPDIR}/../meta-rpi-demo \
 "

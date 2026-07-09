@@ -41,6 +41,12 @@ The custom layer `meta-rpi-demo` contains:
 
 ```text
 yocto-rpi-mender-demo/
+├── ext/
+│   ├── poky/
+│   ├── meta-openembedded/
+│   ├── meta-raspberrypi/
+│   ├── meta-mender/
+│   └── meta-mender-community/
 ├── meta-rpi-demo/
 │   ├── conf/
 │   ├── recipes-core/
@@ -62,7 +68,7 @@ yocto-rpi-mender-demo/
 └── README.md
 ```
 
-The upstream Yocto layers (`poky`, `meta-openembedded`, `meta-raspberrypi`, `meta-mender`, and `meta-mender-community`) are included as Git submodules.
+The upstream Yocto layers (`ext/poky`, `ext/meta-openembedded`, `ext/meta-raspberrypi`, `ext/meta-mender`, and `ext/meta-mender-community`) are included as Git submodules.
 
 ---
 

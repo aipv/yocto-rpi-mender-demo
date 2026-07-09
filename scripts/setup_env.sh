@@ -27,7 +27,7 @@ else
     echo "Creating new build configuration from TEMPLATECONF: ${TEMPLATECONF}"
 fi
 
-source "${PROJECT_DIR}/poky/oe-init-build-env" "${BUILD_DIR}" || return 1
+source "${PROJECT_DIR}/ext/poky/oe-init-build-env" "${BUILD_DIR}" || return 1
 
 echo
 echo "Build environment is ready."
