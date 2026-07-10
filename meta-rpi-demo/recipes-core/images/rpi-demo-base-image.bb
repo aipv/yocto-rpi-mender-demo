@@ -10,6 +10,7 @@ IMAGE_INSTALL:append = " \
     kernel-devicetree \
     mender-server-cert-config \
     image-version \
+    systemd-analyze \
 "
 
 IMAGE_FSTYPES:remove = " rpi-sdimg"
